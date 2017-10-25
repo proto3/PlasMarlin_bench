@@ -93,36 +93,7 @@ bool is_digit(char c)
     return c>=48 && c<=57;
 }
 //----------------------------------------------------------------------------//
-bool is_float(char *word)
-{
-    if(word == NULL)
-        return false;
-
-    int i = 0;
-    bool have_dot = false;
-    while(word[i] != '\0')
-    {
-        char c = word[i];
-
-        if(!is_digit(c) && c != '.' && c != '-')
-            return false;
-
-        if(c == '-' && i != 0)
-            return false;
-
-        if(c == '.')
-            if(have_dot)
-                return false;
-            else
-                have_dot = true;
-
-        i++;
-    }
-
-    return i > 0;
-}
-//----------------------------------------------------------------------------//
-bool is_int(char *word)
+bool is_unsigned(char *word)
 {
     if(word == NULL)
         return false;
@@ -130,14 +101,8 @@ bool is_int(char *word)
     int i = 0;
     while(word[i] != '\0')
     {
-        char c = word[i];
-
-        if(!is_digit(c) && c != '-')
+        if(!is_digit(word[i]))
             return false;
-
-        if(c == '-' && i != 0)
-            return false;
-
         i++;
     }
 
@@ -193,7 +158,7 @@ void process_line(char *line)
             bool all_int = true;
             for(int i=0;i<6;i++)
             {
-                all_int = all_int && is_int(words[i]);
+                all_int = all_int && is_unsigned(words[i]);
             }
             if(all_int)
             {
