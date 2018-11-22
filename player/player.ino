@@ -30,18 +30,18 @@ uint16_t timelength = 0;
 //----------------------------------------------------------------------------//
 void setup()
 {
-    Serial.begin(57600);
+    Serial.begin(115200);
 
     //configure all concerned pins as output
     DDRB = 0xFF;
     DDRF = 0xFF;
     DDRK = 0xFF;
 
-    //set all digital output to high
-    PORTF = 0xBF;
+    //set all digital outputs to high
+    PORTF = 0xFF;
     PORTK = 0xFF;
 
-    //set all PWM output to zero
+    //set all PWM outputs to zero
     analogWrite(JOY_X_PIN, 0);
     analogWrite(JOY_Y_PIN, 0);
     analogWrite(THC_PIN,   0);
@@ -82,17 +82,19 @@ ISR(TIMER1_COMPA_vect)
         PORTF |= CLK_PIN;
     }
 
-    delayMicroseconds(100);
+    delayMicroseconds(10);
     PORTF = PORTF & ~CLK_PIN;
 
     current_time++;
 }
 //----------------------------------------------------------------------------//
+// true if c is in [0-9]
 bool is_digit(char c)
 {
     return c>=48 && c<=57;
 }
 //----------------------------------------------------------------------------//
+// true if word is non empty and all characters are in [0-9]
 bool is_unsigned(char *word)
 {
     if(word == NULL)
@@ -164,9 +166,9 @@ void process_line(char *line)
             {
                 timeline[timelength].time = atoi(words[0]);
                 for(int i=0;i<5;i++)
+                {
                     timeline[timelength].data[i] = atoi(words[i+1]);
-
-                Serial.print("add timestep ");
+                }
                 Serial.println(words[0]);
                 timelength++;
             }
@@ -178,7 +180,7 @@ int nb_read = 0;
 char line[256] = {0};
 void loop()
 {
-    while(Serial.available()>0 && nb_read<256)
+    while(Serial.available() > 0 && nb_read < 256)
     {
         line[nb_read] = Serial.read();
         if(line[nb_read] == '\0' || line[nb_read] == '\n')
