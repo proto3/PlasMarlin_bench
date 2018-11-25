@@ -41,6 +41,9 @@ void setup()
     PORTF = 0xFF;
     PORTK = 0xFF;
 
+    //set clock to zero
+    PORTF = PORTF & ~CLK_PIN;
+
     //set all PWM outputs to zero
     analogWrite(JOY_X_PIN, 0);
     analogWrite(JOY_Y_PIN, 0);
@@ -138,6 +141,7 @@ void process_line(char *line)
             TIMSK1 &= ~(1 << OCIE1A);
             running = false;
             timelength = 0;
+            PORTF = PORTF & ~CLK_PIN;
             Serial.println("reset");
             return;
         }
