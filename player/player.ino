@@ -58,7 +58,7 @@ void setup()
     TCCR1B = 0;// same for TCCR1B
     TCNT1  = 0;//initialize counter value to 0
     // set compare match register for 100hz increments
-    OCR1A = 624;// = (16*10^6) / (100*256) - 1
+    OCR1A = 618;// ~ (16*10^6) / (100*256) - 1 = 624 but refined to fix clock skew
     // turn on CTC mode and set CS12 bits for 256 prescaler
     TCCR1B |= (1 << WGM12 | 1 << CS12);
 
@@ -76,8 +76,8 @@ ISR(TIMER1_COMPA_vect)
 
     if(timeline[current_idx].time == current_time)
     {
-        PORTF = ~timeline[current_idx].data[0] | CLK_PIN;
-        PORTK = ~timeline[current_idx].data[1];
+        PORTF = timeline[current_idx].data[0] | CLK_PIN;
+        PORTK = timeline[current_idx].data[1];
         current_idx++;
     }
     else
@@ -150,7 +150,7 @@ void process_line(char *line)
             running = true;
             current_idx = 0;
             current_time = 0;
-            Serial.println("start");
+            Serial.println(timelength);
             TCNT1 = 0;
             TIMSK1 |= (1 << OCIE1A);
             return;
