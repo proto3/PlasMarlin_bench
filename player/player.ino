@@ -1,30 +1,36 @@
-// PORTF : A0 to A7
-#define END_X_PIN (1 << 0)
-#define END_Y_PIN (1 << 1)
-#define END_Z_PIN (1 << 2)
-#define TFR_PIN   (1 << 3)
-#define OHM_PIN   (1 << 4)
-#define TRC_PIN   (1 << 5)
-#define CLK_PIN   (1 << 6)
+// PORTB : D8 to D13
+// #define BUT_PIN   (1 << 0)
+// #define UP_PIN    (1 << 1)
+// #define DOWN_PIN  (1 << 2)
+// #define STOP_PIN  (1 << 3)
+// #define RESET_PIN (1 << 4)
+// #define LED_PIN   (1 << 5)
 
-// PORTK : A8 to A15
-#define BUT_PIN   (1 << 0)
-#define UP_PIN    (1 << 1)
-#define DOWN_PIN  (1 << 2)
-#define STOP_PIN  (1 << 3)
+// PORTC : A0 to A5
+// #define A0        (1 << 0)
+// #define A1        (1 << 1)
+// #define A2        (1 << 2)
+// #define A3        (1 << 3)
+// #define A4        (1 << 4)
+#define CLK_PIN   (1 << 5)
 
-// PORTB : 10 to 13 ; 50 to 53
-#define JOY_X_PIN 10
-#define JOY_Y_PIN 11
-#define THC_PIN   12
+// PORTD : D0 to D7
+// #define D0        (1 << 0)
+// #define D1        (1 << 1)
+// #define OHM_PIN   (1 << 2)
+// #define END_Z_PIN (1 << 3)
+// #define END_Y_PIN (1 << 4)
+// #define END_X_PIN (1 << 5)
+// #define TRC_PIN   (1 << 6)
+// #define TFR_PIN   (1 << 7)
 
 struct timestep
 {
     uint16_t time;
-    uint8_t data[5];
+    uint8_t data[2];
 };
 
-struct timestep timeline[512];
+struct timestep timeline[256];
 uint16_t timelength = 0;
 
 //----------------------------------------------------------------------------//
@@ -34,20 +40,16 @@ void setup()
 
     //configure all concerned pins as output
     DDRB = 0xFF;
-    DDRF = 0xFF;
-    DDRK = 0xFF;
+    DDRC = 0xFF;
+    DDRD = 0xFF;
 
     //set all digital outputs to high
-    PORTF = 0xFF;
-    PORTK = 0xFF;
+    PORTB = 0xFF;
+    PORTC = 0xFF;
+    PORTD = 0xFF;
 
-    //set clock to zero
-    PORTF = PORTF & ~CLK_PIN;
-
-    //set all PWM outputs to zero
-    analogWrite(JOY_X_PIN, 0);
-    analogWrite(JOY_Y_PIN, 0);
-    analogWrite(THC_PIN,   0);
+    //set clock to low
+    PORTC &= ~CLK_PIN;
 
     cli();
 
@@ -58,7 +60,7 @@ void setup()
     TCCR1B = 0;// same for TCCR1B
     TCNT1  = 0;//initialize counter value to 0
     // set compare match register for 100hz increments
-    OCR1A = 618;// ~ (16*10^6) / (100*256) - 1 = 624 but refined to fix clock skew
+    OCR1A = 624;// ~ (16*10^6) / (100*256) - 1 = 624
     // turn on CTC mode and set CS12 bits for 256 prescaler
     TCCR1B |= (1 << WGM12 | 1 << CS12);
 
@@ -76,17 +78,18 @@ ISR(TIMER1_COMPA_vect)
 
     if(timeline[current_idx].time == current_time)
     {
-        PORTF = timeline[current_idx].data[0] | CLK_PIN;
-        PORTK = timeline[current_idx].data[1];
+        PORTB = timeline[current_idx].data[0];
+        PORTD = timeline[current_idx].data[1];
+        PORTC |= CLK_PIN;
         current_idx++;
     }
     else
     {
-        PORTF |= CLK_PIN;
+        PORTC |= CLK_PIN;
     }
 
     delayMicroseconds(10);
-    PORTF = PORTF & ~CLK_PIN;
+    PORTC &= ~CLK_PIN;
 
     current_time++;
 }
@@ -131,7 +134,7 @@ void process_line(char *line)
 {
     static bool running = false;
 
-    char *words[128] = {NULL};
+    char *words[8] = {NULL};
     int nb_words = split(line, words);
 
     if(nb_words == 1)
@@ -141,7 +144,7 @@ void process_line(char *line)
             TIMSK1 &= ~(1 << OCIE1A);
             running = false;
             timelength = 0;
-            PORTF = PORTF & ~CLK_PIN;
+            PORTC &= ~CLK_PIN;
             Serial.println("reset");
             return;
         }
@@ -159,17 +162,17 @@ void process_line(char *line)
 
     if(!running)
     {
-        if(nb_words == 6)
+        if(nb_words == 3)
         {
             bool all_int = true;
-            for(int i=0;i<6;i++)
+            for(int i=0;i<3;i++)
             {
                 all_int = all_int && is_unsigned(words[i]);
             }
             if(all_int)
             {
                 timeline[timelength].time = atoi(words[0]);
-                for(int i=0;i<5;i++)
+                for(int i=0;i<2;i++)
                 {
                     timeline[timelength].data[i] = atoi(words[i+1]);
                 }
@@ -181,10 +184,10 @@ void process_line(char *line)
 }
 //----------------------------------------------------------------------------//
 int nb_read = 0;
-char line[256] = {0};
+char line[128] = {0};
 void loop()
 {
-    while(Serial.available() > 0 && nb_read < 256)
+    while(Serial.available() > 0 && nb_read < 128)
     {
         line[nb_read] = Serial.read();
         if(line[nb_read] == '\0' || line[nb_read] == '\n')
@@ -197,9 +200,9 @@ void loop()
         nb_read++;
     }
 
-    if(nb_read == 256)
+    if(nb_read == 128)
     {
-        Serial.println("line should be smaller than 256 characters.");
+        Serial.println("line should be smaller than 128 characters.");
         nb_read = 0;
     }
 

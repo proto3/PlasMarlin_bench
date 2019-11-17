@@ -18,9 +18,10 @@ void setup()
 
     pinMode(STEP_PIN, INPUT_PULLUP);
     pinMode(DIR_PIN,  INPUT_PULLUP);
-    pinMode(ENA_PIN,   INPUT_PULLUP);
+    pinMode(ENA_PIN,  INPUT_PULLUP);
 
     pinMode(STEP_OUT_PIN, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
 
     attachInterrupt(digitalPinToInterrupt(STEP_PIN), step, RISING);
 }
@@ -46,6 +47,8 @@ void step()
 void loop()
 {
     int tmp = counter;
+
+    digitalWrite(LED_BUILTIN, (digitalRead(ENA_PIN) == LOW) ? HIGH : LOW);
 
     char a, b, c, d;
     if(counter < -999)
